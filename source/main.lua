@@ -1,3 +1,4 @@
+---@diagnostic disable
 import "CoreLibs/graphics"
 import "CoreLibs/object" -- classを使うために必要.
 import "CoreLibs/sprites" -- spriteを使うために必要.
@@ -7,7 +8,6 @@ import "actor_manager"
 local pd <const> = playdate
 local gfx <const> = pd.graphics
 local sprite <const> = gfx.sprite
-local vec2 <const> = pd.geometry.vector2D
 
 -- Playerクラスの定義.
 class("Player").extends(Actor)
@@ -24,25 +24,25 @@ function Player:update()
 	-- 十字キーで移動.
 	self.vx = 0
 	self.vy = 0
-	local v = vec2.new(0, 0)
+	local dx = 0
+	local dy = 0
 	local moveSpeed = 5
 	if pd.buttonIsPressed(pd.kButtonLeft) then
-		v.x = -1
+		dx = -1
 	elseif pd.buttonIsPressed(pd.kButtonRight) then
-		v.x = 1
+		dx = 1
 	end
 	if pd.buttonIsPressed(pd.kButtonUp) then
-		v.y = -1
+		dy = -1
 	elseif pd.buttonIsPressed(pd.kButtonDown) then
-		v.y = 1
+		dy = 1
 	end
-	if v.x == 0 and v.y == 0 then
+	if dx == 0 and dy == 0 then
 		return
 	end
 
-	v = v:normalized() -- ベクトルを正規化して斜め移動も同じ速度になるようにする.
-	v *= moveSpeed -- ベクトルに移動速度を掛ける.
-	self:move(v.x, v.y, true) -- 画面外に出ないように移動.
+	local len = math.sqrt(dx * dx + dy * dy)
+	self:move((dx / len) * moveSpeed, (dy / len) * moveSpeed, true) -- 斜め移動でも同速になるように正規化して移動.
 end
 
 -- ショットの定義.
@@ -59,9 +59,20 @@ function Shot:update()
 	end
 end
 
-local player = Player(200, 120)
----@type ActorManager<Shot>
+-- 敵の定義.
+class("Enemy").extends(Actor)
+function Enemy:init(x, y)
+	Enemy.super.init(self, x, y, 32, 32)
+	print("Enemy created at (" .. x .. ", " .. y .. ")")
+end
+function Enemy:update()
+	Enemy.super.update(self)
+	-- ここでは特に何もしない.
+end	
+
+local player = Player(200, 200)
 local shotManager = ActorManager(Shot)
+local enemy = Enemy(200, 40)
 
 function pd.update()
     gfx.clear()
@@ -73,5 +84,14 @@ function pd.update()
 		shot:setVelocity(90, 7) -- 上方向に速度を設定.
     end
 
+	shotManager:forEach(function(shot)
+		if shot:isCollidingCircle(enemy) then
+			print("Hit!")
+			shot:despawn() -- 当たったショットを削除.
+			-- enemy:remove() -- 敵を削除.
+		end
+	end)
+	
+	-- ショットの数を画面に表示.
 	gfx.drawText("shot: " .. shotManager:getCount(), 10, 10)
 end

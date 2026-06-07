@@ -1,9 +1,7 @@
---[[
-	Actor.lua
-
-	Actorクラスは、ゲーム内のすべての動くオブジェクトの基本クラスです。
-	位置、速度、移動方法などを管理します。
---]]
+---@diagnostic disable
+-- Actor.lua
+-- Actorクラスは、ゲーム内のすべての動くオブジェクトの基本クラスです。
+-- 位置、速度、移動方法などを管理します。
 import "CoreLibs/graphics"
 import "CoreLibs/object"
 import "CoreLibs/sprites"
@@ -13,20 +11,33 @@ local gfx <const> = pd.graphics
 local sprite <const> = gfx.sprite
 
 class("Actor").extends(sprite)
+
 -- コンストラクタ.
+--- @param x number 初期X座標
+--- @param y number 初期Y座標
+--- @param w number 幅
+--- @param h number 高さ
 function Actor:init(x, y, w, h)
 	Actor.super.init(self)
 	local image = gfx.image.new(w, h, gfx.kColorBlack)
 	self:setImage(image)
 	self:moveTo(x, y)
 	self:add()
+	--- @field vx number X方向の速度
+	--- @field vy number Y方向の速度
+	--- @field radius number 当たり判定用の半径（円形と�仮定）
+	--- @field manager ActorManager? 管理しているActorManagerへの参照（管理されていない場合はnil）
 	self.vx = 0
 	self.vy = 0
+	self.radius = w * 0.5 -- 当たり判定用の半径（円形と仮定）.
 	self.manager = nil -- ActorManagerが管理している場合はそこから削除するための参照.
 	print("Actor created at (" .. x .. ", " .. y .. ") with size (" .. w .. ", " .. h .. ")")
 end
 
 -- 移動.
+--- @param dx integer X方向の移動量
+--- @param dy integer Y方向の移動量
+--- @param bClip boolean 画面外に出ないようにするかどうか
 function Actor:move(dx, dy, bClip)
 	if bClip == false then
 		return self:moveBy(dx, dy)
@@ -66,4 +77,15 @@ function Actor:despawn()
 		return
 	end
 	self:remove()
+end
+
+-- 円の当たり判定を行う.
+--- @param other Actor 判定対象のActor
+--- @return boolean 当たっているかどうか
+function Actor:isCollidingCircle(other)
+	local dx = self.x - other.x
+	local dy = self.y - other.y
+	local distanceSq = dx * dx + dy * dy
+	local radiusSum = self.radius + other.radius
+	return distanceSq <= radiusSum * radiusSum
 end
