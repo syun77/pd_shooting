@@ -39,7 +39,8 @@ function Enemy:update()
 	Enemy.super.update(self)
 	self.timer += 1
 	if self.timer % 30 == 0 then
-		self:bullet(self:getAim(), 5) -- 毎秒1発、プレイヤーに向かって弾を撃つ.
+		local aim = self:getAim()
+		self:nWayBullet(3, aim, 5, 30) -- 毎秒1発、プレイヤーに向かって弾を撃つ.
 	end
 end
 
@@ -67,4 +68,17 @@ function Enemy:getAim()
 	local dy = player.y - self.y
 	local angle = math.atan2(-dy, dx) * 180 / math.pi -- atan2の引数は(y, x)の順で、yは反転させる.
 	return angle
+end
+
+-- N-Wayショットを撃つ.
+function Enemy:nWayBullet(n, angle, speed, spread)
+	if self.bullets == nil then
+		return
+	end
+	local d = spread / n
+	local a = angle - (d * 0.5 * (n - 1))
+	for i = 0, n - 1 do
+		self:bullet(a, speed)
+		a += d
+	end
 end
