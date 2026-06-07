@@ -30,6 +30,15 @@ function ActorManager:create(...)
 	return actor
 end
 
+--- 外部から要素を追加する.
+--- @generic T
+--- @param actor T
+function ActorManager:add(actor)
+	---@cast actor any
+	actor.manager = self -- Actorに自分を管理者として設定.
+	table.insert(self.pool, actor)
+end
+
 --- すべてのActorを取得.
 ---@generic T
 ---@return T[]
@@ -67,5 +76,20 @@ function ActorManager:forEach(func)
 	for _, actor in ipairs(self.pool) do
 		func(actor)
 	end
+end
+
+--- 指定の条件に当てはまるActorをリストで取得.
+--- @generic T
+--- @param predicate fun(actor: T): boolean
+--- @return T[]
+function ActorManager:findAll(predicate)
+	local result = {}
+	for _, actor in ipairs(self.pool) do
+		if predicate(actor) then
+			-- 条件に一致.
+			table.insert(result, actor)
+		end
+	end
+	return result
 end
 

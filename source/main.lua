@@ -9,6 +9,12 @@ local pd <const> = playdate
 local gfx <const> = pd.graphics
 local sprite <const> = gfx.sprite
 
+-- 敵の種類.
+local eEnemyType = {
+	Normal = 1,
+	Boss = 255,
+}
+
 -- Playerクラスの定義.
 class("Player").extends(Actor)
 -- コンストラクタ.
@@ -63,16 +69,39 @@ end
 class("Enemy").extends(Actor)
 function Enemy:init(x, y)
 	Enemy.super.init(self, x, y, 32, 32)
+	self.hp = 3 -- 敵のHP.
 	print("Enemy created at (" .. x .. ", " .. y .. ")")
 end
 function Enemy:update()
 	Enemy.super.update(self)
 	-- ここでは特に何もしない.
+end
+-- 敵種別を設定.
+function Enemy:setType(type)
+	self.type = type
 end	
+-- 敵にダメージを与える関数.
+function Enemy:damage(amount)
+	self.hp = self.hp - amount
+	print("Enemy damaged! HP: " .. self.hp)
+	if self.hp <= 0 then
+		self:despawn() -- HPが0以下になったら削除.
+	end
+end
+-- ボスの定義.
+class("Boss").extends(Enemy)
+function Boss:init(x, y)
+	Boss.super.init(self, x, y, 48, 48)
+	self.hp = 20 -- ボスのHP.
+	print("Boss created at (" .. x .. ", " .. y .. ")")
+end
 
 local player = Player(200, 200)
 local shotManager = ActorManager(Shot)
-local enemy = Enemy(200, 40)
+local enemyManager = ActorManager(Enemy)
+local boss = Boss(200, 20)
+boss:setType(eEnemyType.Boss)
+enemyManager:add(boss)	-- ボスは直接追加.
 
 function pd.update()
     gfx.clear()
@@ -85,13 +114,22 @@ function pd.update()
     end
 
 	shotManager:forEach(function(shot)
-		if shot:isCollidingCircle(enemy) then
-			print("Hit!")
-			shot:despawn() -- 当たったショットを削除.
-			-- enemy:remove() -- 敵を削除.
-		end
+		enemyManager:forEach(function(enemy)
+			if shot:isCollidingCircle(enemy) then
+				print("Hit!")
+				shot:despawn() -- 当たったショットを削除.
+				enemy:damage(1) -- 敵にダメージを与える.
+			end
+		end)
 	end)
 	
+	local bosses = enemyManager:findAll(function(enemy)
+		return enemy.type == eEnemyType.Boss
+	end)
+	-- ボスのHPを画面に表示.
+	if #bosses > 0 then
+		gfx.drawText("Boss HP: " .. bosses[1].hp, 10, 10)
+	end
 	-- ショットの数を画面に表示.
-	gfx.drawText("shot: " .. shotManager:getCount(), 10, 10)
+	gfx.drawText("shot: " .. shotManager:getCount(), 10, 30)
 end
