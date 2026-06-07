@@ -22,8 +22,10 @@ function Actor:init(x, y, w, h)
 	self:add()
 	self.vx = 0
 	self.vy = 0
+	self.manager = nil -- ActorManagerが管理している場合はそこから削除するための参照.
 	print("Actor created at (" .. x .. ", " .. y .. ") with size (" .. w .. ", " .. h .. ")")
 end
+
 -- 移動.
 function Actor:move(dx, dy, bClip)
 	if bClip == false then
@@ -53,4 +55,15 @@ function Actor:setVelocity(angle, speed)
 	local rad = math.rad(angle)
 	self.vx = math.cos(rad) * speed
 	self.vy = math.sin(-rad) * speed
+end
+
+-- ActorManagerから生成された場合はそこから消す
+-- そうでなければ直接スプライトを削除する.
+function Actor:despawn()
+	if self.manager ~= nil then
+		-- 管理しているActorManagerから削除する.
+		self.manager:remove(self)
+		return
+	end
+	self:remove()
 end

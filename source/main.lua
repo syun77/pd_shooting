@@ -55,7 +55,7 @@ function Shot:update()
 	Shot.super.update(self)
 	self:move(self.vx, self.vy, false) -- 画面外に出ても移動.
 	if self:isOffScreen() then
-		self:remove() -- 画面外に出たら削除.
+		self:despawn() -- 画面外に出たら管理情報ごと削除.
 	end
 end
 
@@ -68,9 +68,10 @@ function pd.update()
 	sprite.update() -- すべてのスプライトを更新と描画.
 
     if pd.buttonJustPressed(pd.kButtonA) then
+		-- ショットを撃ちます.
 		local shot = shotManager:create(player.x, player.y)
 		shot:setVelocity(90, 7) -- 上方向に速度を設定.
     end
 
-	gfx.drawText("Hello, Playdate!", 10, 10)
+	gfx.drawText("shot: " .. shotManager:getCount(), 10, 10)
 end
