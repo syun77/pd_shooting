@@ -1,6 +1,6 @@
-name=Capy Run
+name=ShootingTest
 author=syun77
-description=Super Capybara Action
-bundleID=com.play.date.capyrun
+description=Shooting Test
+bundleID=jp.2dgames.shooting-test
 version=1.0.0
 buildNumber=1
