@@ -2,6 +2,7 @@ import "CoreLibs/graphics"
 import "CoreLibs/object" -- classを使うために必要.
 import "CoreLibs/sprites" -- spriteを使うために必要.
 import "actor"
+import "actor_manager"
 
 local pd <const> = playdate
 local gfx <const> = pd.graphics
@@ -44,14 +45,31 @@ function Player:update()
 	self:move(v.x, v.y, true) -- 画面外に出ないように移動.
 end
 
+-- ショットの定義.
+class("Shot").extends(Actor)
+function Shot:init(x, y)
+	Shot.super.init(self, x, y, 4, 4)
+	print("Shot created at (" .. x .. ", " .. y .. ")")
+end
+function Shot:update()
+	Shot.super.update(self)
+	self:move(self.vx, self.vy, false) -- 画面外に出ても移動.
+	if self:isOffScreen() then
+		self:remove() -- 画面外に出たら削除.
+	end
+end
+
 local player = Player(200, 120)
+---@type ActorManager<Shot>
+local shotManager = ActorManager(Shot)
 
 function pd.update()
     gfx.clear()
 	sprite.update() -- すべてのスプライトを更新と描画.
 
     if pd.buttonJustPressed(pd.kButtonA) then
-		print("A button was just pressed!")
+		local shot = shotManager:create(player.x, player.y)
+		shot:setVelocity(90, 7) -- 上方向に速度を設定.
     end
 
 	gfx.drawText("Hello, Playdate!", 10, 10)

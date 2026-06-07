@@ -44,6 +44,13 @@ end
 function Actor:isOffScreen()
 	local w2 = self.width * 0.5
 	local h2 = self.height * 0.5
-	return self.x + w2 < 0 or self.x - w2 > pd.display.getWidth() or
-		   self.y + h2 < 0 or self.y - h2 > pd.display.getHeight()
+	return self.x < -w2 or self.x + w2 > pd.display.getWidth() or
+		   self.y < -h2 or self.y + h2 > pd.display.getHeight()
+end
+
+-- 角度と速度を指定して移動量を設定する.
+function Actor:setVelocity(angle, speed)
+	local rad = math.rad(angle)
+	self.vx = math.cos(rad) * speed
+	self.vy = math.sin(-rad) * speed
 end
