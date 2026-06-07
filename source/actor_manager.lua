@@ -93,3 +93,16 @@ function ActorManager:findAll(predicate)
 	return result
 end
 
+--- 指定の条件に当てはまる最初のActorを取得.
+--- @generic T
+--- @param predicate fun(actor: T): boolean
+--- @return T?
+--- @cast fun(actor: T): boolean
+function ActorManager:findFirst(predicate)
+	for _, actor in ipairs(self.pool) do
+		if predicate(actor) then
+			return actor
+		end
+	end
+	return nil
+end

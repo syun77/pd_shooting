@@ -25,10 +25,14 @@ function Actor:init(x, y, w, h)
 	self:add()
 	--- @field vx number X方向の速度
 	--- @field vy number Y方向の速度
-	--- @field radius number 当たり判定用の半径（円形と�仮定）
+	--- @field ax number X方向の加速度
+	--- @field ay number Y方向の加速度
+	--- @field radius number 当たり判定用の半径（円形と仮定）
 	--- @field manager ActorManager? 管理しているActorManagerへの参照（管理されていない場合はnil）
 	self.vx = 0
 	self.vy = 0
+	self.ax = 0
+	self.ay = 0
 	self.radius = w * 0.5 -- 当たり判定用の半径（円形と仮定）.
 	self.manager = nil -- ActorManagerが管理している場合はそこから削除するための参照.
 	print("Actor created at (" .. x .. ", " .. y .. ") with size (" .. w .. ", " .. h .. ")")
