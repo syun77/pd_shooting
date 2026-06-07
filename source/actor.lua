@@ -10,6 +10,14 @@ local pd <const> = playdate
 local gfx <const> = pd.graphics
 local sprite <const> = gfx.sprite
 
+--- Actorクラスの定義.
+---@class Actor : playdate.graphics.sprite
+---@field vx number X方向の速度
+---@field vy number Y方向の速度
+---@field ax number X方向の加速度
+---@field ay number Y方向の加速度
+---@field radius number 当たり判定用の半径。円形コリジョンとして扱う
+---@field manager ActorManager? このActorを管理しているActorManager。未登録ならnil
 class("Actor").extends(sprite)
 
 -- コンストラクタ.
@@ -23,16 +31,10 @@ function Actor:init(x, y, w, h)
 	self:setImage(image)
 	self:moveTo(x, y)
 	self:add()
-	--- @field vx number X方向の速度
-	--- @field vy number Y方向の速度
-	--- @field ax number X方向の加速度
-	--- @field ay number Y方向の加速度
-	--- @field radius number 当たり判定用の半径（円形と仮定）
-	--- @field manager ActorManager? 管理しているActorManagerへの参照（管理されていない場合はnil）
-	self.vx = 0
-	self.vy = 0
-	self.ax = 0
-	self.ay = 0
+	self.vx = 0 -- X方向の速度.
+	self.vy = 0 -- Y方向の速度.
+	self.ax = 0 -- X方向の加速度.
+	self.ay = 0 -- Y方向の加速度.
 	self.radius = w * 0.5 -- 当たり判定用の半径（円形と仮定）.
 	self.manager = nil -- ActorManagerが管理している場合はそこから削除するための参照.
 	print("Actor created at (" .. x .. ", " .. y .. ") with size (" .. w .. ", " .. h .. ")")
@@ -58,6 +60,7 @@ function Actor:move(dx, dy, bClip)
 end
 
 -- 画面外に出ているかどうかを判定する関数.
+--- @return boolean 画面外に出ているかどうか.
 function Actor:isOffScreen()
 	local w2 = self.width * 0.5
 	local h2 = self.height * 0.5
@@ -66,6 +69,8 @@ function Actor:isOffScreen()
 end
 
 -- 角度と速度を指定して移動量を設定する.
+--- @param angle number 角度（度）
+--- @param speed number 速度
 function Actor:setVelocity(angle, speed)
 	local rad = math.rad(angle)
 	self.vx = math.cos(rad) * speed

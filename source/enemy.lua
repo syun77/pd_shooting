@@ -40,10 +40,16 @@ function Enemy:init(x, y)
 end
 
 -- 弾を撃つ.
+--- @param angle number 角度（度）
+--- @param speed number 速度
+--- @param delay? integer 遅延時間（フレーム数）
+--- @param ax? number 加速度X
+--- @param ay? number 加速度Y
 function Enemy:bullet(angle, speed, delay, ax, ay)
 	if self.bullets == nil then
 		return
 	end
+	-- デフォルト引数を設定.
 	if delay == nil then delay = 0 end
 	if ax == nil then ax = 0 end
 	if ay == nil then ay = 0 end
@@ -54,6 +60,7 @@ function Enemy:bullet(angle, speed, delay, ax, ay)
 		return
 	end
 
+	-- そのまま発射可能.
 	local bullet = self.bullets:create(self.x, self.y)
 	bullet:setVelocity(angle, speed)
 	bullet.ax = ax
@@ -101,6 +108,11 @@ function Enemy:getAim()
 end
 
 -- N-Wayショットを撃つ.
+--- @param n integer 弾の数
+--- @param angle number 中心の角度（度）
+--- @param speed number 速度
+--- @param spread number 弾の広がり角度（度）
+--- @param delay? integer 遅延時間（フレーム数）
 function Enemy:nWayBullet(n, angle, speed, spread, delay)
 	if self.bullets == nil then
 		return
@@ -114,6 +126,11 @@ function Enemy:nWayBullet(n, angle, speed, spread, delay)
 end
 
 -- 遅延弾発射の情報を追加する.
+--- @param angle number 角度（度）
+--- @param speed number 速度
+--- @param delay integer 遅延時間（フレーム数）
+--- @param ax number 加速度X
+--- @param ay number 加速度Y
 function Enemy:_addBattery(angle, speed, delay, ax, ay)
 	table.insert(self.batteries, DelayedBatteryInfo(angle, speed, delay, ax, ay))
 end

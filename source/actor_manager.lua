@@ -7,12 +7,14 @@
 --]]
 import "CoreLibs/object"
 
+---@class ActorManager
+---@field pool Actor[]
 ---@generic T
 class("ActorManager").extends()
 
 --- コンストラクタ.
 ---@generic T
----@param actorClass fun(...): T
+---@param actorClass fun(...): T 生成を行うクラス.
 function ActorManager:init(actorClass)
 	self.actorClass = actorClass
 	self.pool = {}
@@ -64,14 +66,14 @@ end
 
 --- Actor生成数の取得.
 --- @generic T
---- @return integer
+--- @return integer 生成されているActorの数.
 function ActorManager:getCount()
 	return #self.pool
 end
 
 --- foreachで管理しているActorに処理を行う.
 --- @generic T
---- @param func fun(actor: T)
+--- @param func fun(actor: T) 処理を行う関数.
 function ActorManager:forEach(func)
 	for _, actor in ipairs(self.pool) do
 		func(actor)
@@ -80,8 +82,8 @@ end
 
 --- 指定の条件に当てはまるActorをリストで取得.
 --- @generic T
---- @param predicate fun(actor: T): boolean
---- @return T[]
+--- @param predicate fun(actor: T): boolean 判定条件を行う関数.
+--- @return T[] 条件に一致するActorのリスト
 function ActorManager:findAll(predicate)
 	local result = {}
 	for _, actor in ipairs(self.pool) do
@@ -95,9 +97,8 @@ end
 
 --- 指定の条件に当てはまる最初のActorを取得.
 --- @generic T
---- @param predicate fun(actor: T): boolean
---- @return T?
---- @cast fun(actor: T): boolean
+--- @param predicate fun(actor: T): boolean 判定条件を行う関数.
+--- @return T? actor 最初に見つかったActor、見つからない場合はnil
 function ActorManager:findFirst(predicate)
 	for _, actor in ipairs(self.pool) do
 		if predicate(actor) then
