@@ -3,6 +3,7 @@ import "CoreLibs/graphics"
 import "CoreLibs/object" -- classを使うために必要.
 import "CoreLibs/sprites" -- spriteを使うために必要.
 import "actor"
+import "player"
 import "actor_manager"
 import "enemy"
 import "game_context"
@@ -10,61 +11,12 @@ import "game_context"
 local pd <const> = playdate
 local gfx <const> = pd.graphics
 local sprite <const> = gfx.sprite
-local vec2 <const> = pd.geometry.vector2D
 
 -- 敵の種類.
 local eEnemyType = {
 	Normal = 1,
 	Boss = 255,
 }
-
--- Playerクラスの定義.
-class("Player").extends(Actor)
--- コンストラクタ.
-function Player:init(x, y)
-	Player.super.init(self, x, y, 16, 16)
-	self.shots = nil -- ショットを管理するActorManagerへの参照.
-	-- Player.super.setCenter(self, 0.5, 0.5) -- 中心をスプライトの中央に設定.
-	print("Player created at (" .. x .. ", " .. y .. ")")
-end
--- 弾を撃つ.
-function Player:shoot()
-	if self.shots == nil then
-		return
-	end
-
-	local shot = self.shots:create(self.x, self.y)
-	shot:setVelocity(90, 10) -- 上方向に速度を設定.
-end
--- 更新.
-function Player:update()
-	Player.super.update(self) -- Actorのupdateを呼び出す.
-	if pd.buttonJustPressed(pd.kButtonA) then
-		self:shoot()
-	end
-
-	-- 十字キーで移動.
-	self.vx = 0
-	self.vy = 0
-	local v = vec2.new(0, 0)
-	local moveSpeed = 5 -- 移動速度.
-	if pd.buttonIsPressed(pd.kButtonLeft) then
-		v.x = -1
-	elseif pd.buttonIsPressed(pd.kButtonRight) then
-		v.x = 1
-	end
-	if pd.buttonIsPressed(pd.kButtonUp) then
-		v.y = -1
-	elseif pd.buttonIsPressed(pd.kButtonDown) then
-		v.y = 1
-	end
-	if v.x == 0 and v.y == 0 then
-		return
-	end
-	v:normalize()
-	v *= moveSpeed
-	self:move(v.x, v.y, true) -- 斜め移動でも同速になるように正規化して移動.
-end
 
 -- ショットの定義.
 class("Shot").extends(Actor)
