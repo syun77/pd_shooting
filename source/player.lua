@@ -1,4 +1,9 @@
 ---@diagnostic disable
+--[[
+	player.lua
+
+	Playerクラスは、ゲーム内のプレイヤーキャラクターを表すクラスです。
+	Actorクラスを継承し、プレイヤー特有の動きや攻撃パターンを実装します。]]
 import "CoreLibs/object"
 import "actor"
 
