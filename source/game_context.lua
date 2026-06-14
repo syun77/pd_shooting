@@ -55,6 +55,6 @@ function GameContext:setup()
 	-- 各種参照を登録.
 	self.player.shots = self.shotManager
 	-- ボスを生成して敵管理に登録.
-	self.boss = Boss(200, 20, self.enemyManager)
+	self.boss = Boss(200, 48, self.enemyManager)
 	self.enemyManager:add(self.boss)
 end

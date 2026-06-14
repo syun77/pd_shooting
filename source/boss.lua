@@ -27,9 +27,16 @@ function Boss:update()
 	Boss.super.update(self)
 	self.timer += 1
 	if self.timer == 30 then
-		print("Boss starts attacking!")
 		self:spawnEnemy(eEnemyType.Stinger, 270-45, 5) -- Stingerをスポーン.
 		self:spawnEnemy(eEnemyType.Stinger, 270+45, 5) -- Stingerをスポーン.
+	elseif self.timer == 180 then
+		self:spawnEnemy(eEnemyType.Side, 180, 5) -- Sideをスポーン.
+		self:spawnEnemy(eEnemyType.Side, 0, 5) -- Sideをスポーン.
+	elseif self.timer == 400 then
+		for i = 0, 16 do
+			local angle = i * 22.5
+			self:spawnEnemy(eEnemyType.Ring, angle, 4.5) -- Ringをスポーン.
+		end
 	end
 end
 

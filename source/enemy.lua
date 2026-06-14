@@ -9,10 +9,16 @@ import "CoreLibs/object"
 import "actor"
 import "game_context"
 
+local pd <const> = playdate
+local gfx <const> = pd.graphics
+local sprite <const> = gfx.sprite
+
 -- 敵の種類.
 -- グローバルスコープに配置します.
 eEnemyType = {
 	Stinger = 1, -- 高速狙い撃ち弾.
+	Side = 2, -- 両脇から横方向に弾を撃つ.
+	Ring = 3, -- 周囲にリング状に弾を撃つ.
 	Boss = 255,
 }
 
@@ -39,12 +45,20 @@ class("Enemy").extends(Actor)
 -- コンストラクタ.
 function Enemy:init(x, y, type)
 	self.type = type
-	Enemy.super.init(self, x, y, 32, 32)
+	local size = self:getSize()
+	Enemy.super.init(self, x, y, size, size)
 	self.bullets = GameContext.getInstance().bulletManager -- 弾を管理するActorManagerへの参照.
 	self.hp = 3 -- 敵のHP.
 	self.timer = 0
+	self.step = 0 -- 攻撃パターンの段階管理用変数.
+	self.lifetime = self:getLifetime() -- 生存時間.
 	self.batteries = {} -- 遅延弾発射の情報を格納するテーブル.
 	print("Enemy created at (" .. x .. ", " .. y .. ")")
+end
+
+-- 消滅.
+function Enemy:destroy()
+	self:despawn() -- 管理情報ごと削除.
 end
 
 -- 弾を撃つ.
@@ -78,6 +92,12 @@ end
 -- 更新.
 function Enemy:update()
 	Enemy.super.update(self)
+	self.lifetime -= 1
+	if self.lifetime <= 0 then
+		self:despawn() -- 生存時間が尽きたら管理情報ごと削除.
+		return
+	end
+
 	self:_updateMovement() -- 敵の動きの更新.
 	if self:isOffScreen() then
 		self:despawn() -- 画面外に出たら管理情報ごと削除.
@@ -93,7 +113,7 @@ function Enemy:damage(amount)
 	self.hp = self.hp - amount
 	print("Enemy damaged! HP: " .. self.hp)
 	if self.hp <= 0 then
-		self:despawn() -- HPが0以下になったら削除.
+		self:destroy() -- HPが0以下になったら削除.
 	end
 end
 
@@ -109,14 +129,47 @@ function Enemy:getAim()
 	return angle
 end
 
+-- サイズを取得.
+function Enemy:getSize()
+	if self.type == eEnemyType.Ring then
+		return 8
+	elseif self.type == eEnemyType.Boss then
+		return 48
+	end
+	return 16
+end
+
+-- 生存時間を取得.
+function Enemy:getLifetime()
+	if self.type == eEnemyType.Ring then
+	elseif self.type == eEnemyType.Boss then
+		return math.huge -- ボスは無限に生存する.
+	end
+	return 30 * 10 -- 10秒間生存（30FPS想定）.
+end
+
 -- 更新 > 移動.
 function Enemy:_updateMovement()
 	if self.type == eEnemyType.Stinger then
 		self.vx *= 0.9 -- 徐々に減速.
 		self.vy *= 0.9
-		self:move(self.vx, self.vy, false) -- 画面外に出ても移動.
-	elseif self.type == eEnemyType.Boss then
+	elseif self.type == eEnemyType.Side then
+		if self.timer < 60 then
+			self.vx *= 0.93 -- 徐々に減速.
+			self.vy *= 0.93
+		elseif self.timer == 60 then
+			if self.x < pd.display.getWidth() / 2 then
+				self.timer += 10 -- 発射タイミングをずらします.
+			end
+		else
+			self.vx = 0 -- 60フレーム経過したら止まる.
+			self.vy = 3 -- 下方向に移動.
+		end
+	else
+		self.vx *= 0.9 -- 徐々に減速.
+		self.vy *= 0.9
 	end
+	self:move(self.vx, self.vy, false) -- 画面外に出ても移動.
 end
 -- 更新 > 攻撃パターン.
 function Enemy:_updateAttackPattern()
@@ -130,6 +183,36 @@ function Enemy:_updateAttackPattern()
 				local delay = i * 2
 				self:bullet(aim, 11, delay) -- 毎秒1発、プレイヤーに向かって弾を撃つ.
 			end
+			self.step += 1
+			if self.step >= 3 then
+				self.lifetime = 20 -- 3回攻撃したら消える.
+			end
+		end
+	elseif self.type == eEnemyType.Side then
+		-- 両脇から横方向に弾を撃つ.
+		if self.timer < 60 then
+			return -- 最初の60フレームは攻撃しない.
+		end
+		local angle = 0
+		if self.x > pd.display.getWidth() / 2 then
+			-- 画面左側にいる場合は右方向に撃つ.
+			angle = 180
+		end
+		if self.timer % 20 == 0 then
+			for i = 0, 3 do
+				local delay = i * 2
+				self:bullet(angle, 5, delay) -- 毎秒1発、横方向に弾を撃つ.
+			end
+		end
+	elseif self.type == eEnemyType.Ring then
+		-- 周囲にリング状に弾を撃つ.
+		if self.timer % 30 == 0 then
+			local spd = 3 + self.step * 2 -- 少しずつ速くする.
+			self:bullet(aim, spd) -- 中心の角度に向かって1発撃つ.
+			self.step += 1
+			if self.step >= 5 then
+				self.lifetime = 20 -- 5回攻撃したら消える.
+			end
 		end
 	elseif self.type == eEnemyType.Boss then
 		-- ボスは何もしない.
@@ -142,7 +225,7 @@ end
 --- @param speed number 速度
 --- @param spread number 弾の広がり角度（度）
 --- @param delay? integer 遅延時間（フレーム数）
-function Enemy:nWayBullet(n, angle, speed, spread, delay)
+function Enemy:_nWay(n, angle, speed, spread, delay)
 	if self.bullets == nil then
 		return
 	end
