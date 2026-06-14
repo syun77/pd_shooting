@@ -7,6 +7,7 @@
 --]]
 import "CoreLibs/object"
 import "actor_manager"
+import "enemy"
 
 class("GameContext").extends()
 
@@ -39,7 +40,7 @@ function GameContext:destroy()
 end
 
 -- ゲームで使う共有オブジェクトを一度だけ初期化する.
-function GameContext:setup(enemyType)
+function GameContext:setup()
 	if self.player ~= nil then
 		return
 	end
@@ -54,7 +55,6 @@ function GameContext:setup(enemyType)
 	-- 各種参照を登録.
 	self.player.shots = self.shotManager
 	-- ボスを生成して敵管理に登録.
-	self.boss = Boss(200, 20)
-	self.boss:setType(enemyType.Boss)
+	self.boss = Boss(200, 20, self.enemyManager)
 	self.enemyManager:add(self.boss)
 end

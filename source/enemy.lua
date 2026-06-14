@@ -9,6 +9,13 @@ import "CoreLibs/object"
 import "actor"
 import "game_context"
 
+-- 敵の種類.
+-- グローバルスコープに配置します.
+eEnemyType = {
+	Stinger = 1, -- 高速狙い撃ち弾.
+	Boss = 255,
+}
+
 -- 遅延弾発射情報.
 class ("DelayedBatteryInfo").extends()
 function DelayedBatteryInfo:init(angle, speed, delay, ax, ay)
@@ -30,7 +37,8 @@ end
 class("Enemy").extends(Actor)
 
 -- コンストラクタ.
-function Enemy:init(x, y)
+function Enemy:init(x, y, type)
+	self.type = type
 	Enemy.super.init(self, x, y, 32, 32)
 	self.bullets = GameContext.getInstance().bulletManager -- 弾を管理するActorManagerへの参照.
 	self.hp = 3 -- 敵のHP.
@@ -70,20 +78,14 @@ end
 -- 更新.
 function Enemy:update()
 	Enemy.super.update(self)
-	self.timer += 1
-	if self.timer % 30 == 0 then
-		local aim = self:getAim()
-		for i = 0, 5 do
-			local delay = i * 3
-			self:nWayBullet(3, aim, 5, 30, delay) -- 毎秒1発、プレイヤーに向かって弾を撃つ.
-		end
+	self:_updateMovement() -- 敵の動きの更新.
+	if self:isOffScreen() then
+		self:despawn() -- 画面外に出たら管理情報ごと削除.
+		return
 	end
-	self:_updateBatteries() -- 遅延弾発射の更新.
-end
 
--- 敵種別を設定.
-function Enemy:setType(type)
-	self.type = type
+	self:_updateAttackPattern() -- 敵の攻撃パターンの更新.
+	self:_updateBatteries() -- 遅延弾発射の更新.
 end
 
 -- 敵にダメージを与える関数.
@@ -105,6 +107,33 @@ function Enemy:getAim()
 	local dy = player.y - self.y
 	local angle = math.atan2(-dy, dx) * 180 / math.pi -- atan2の引数は(y, x)の順で、yは反転させる.
 	return angle
+end
+
+-- 更新 > 移動.
+function Enemy:_updateMovement()
+	if self.type == eEnemyType.Stinger then
+		self.vx *= 0.9 -- 徐々に減速.
+		self.vy *= 0.9
+		self:move(self.vx, self.vy, false) -- 画面外に出ても移動.
+	elseif self.type == eEnemyType.Boss then
+	end
+end
+-- 更新 > 攻撃パターン.
+function Enemy:_updateAttackPattern()
+	self.timer += 1
+	local aim = self:getAim()
+
+	if self.type == eEnemyType.Stinger then
+		-- 高速狙い撃ち弾.
+		if self.timer % 30 == 0 then
+			for i = 0, 5 do
+				local delay = i * 2
+				self:bullet(aim, 11, delay) -- 毎秒1発、プレイヤーに向かって弾を撃つ.
+			end
+		end
+	elseif self.type == eEnemyType.Boss then
+		-- ボスは何もしない.
+	end
 end
 
 -- N-Wayショットを撃つ.

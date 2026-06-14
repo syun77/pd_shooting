@@ -15,19 +15,14 @@ local pd <const> = playdate
 local gfx <const> = pd.graphics
 local sprite <const> = gfx.sprite
 
--- 敵の種類.
-local eEnemyType = {
-	Normal = 1,
-	Boss = 255,
-}
-
 local gameContext = GameContext.getInstance()
-gameContext:setup(eEnemyType)
+gameContext:setup()
 
 function pd.update()
     gfx.clear()
 	sprite.update() -- すべてのスプライトを更新と描画.
 
+	-- shot vs enemy.
 	gameContext.shotManager:forEach(function(shot)
 		gameContext.enemyManager:forEach(function(enemy)
 			if shot:isCollidingCircle(enemy) then
@@ -38,6 +33,7 @@ function pd.update()
 		end)
 	end)
 	
+	-- bossを取得.
 	local boss = gameContext.enemyManager:findFirst(function(enemy)
 		return enemy.type == eEnemyType.Boss
 	end)
@@ -49,4 +45,6 @@ function pd.update()
 	gfx.drawText("shot: " .. gameContext.shotManager:getCount(), 10, 30)
 	-- 敵弾の数を画面に表示.
 	gfx.drawText("bullet: " .. gameContext.bulletManager:getCount(), 10, 50)
+	-- 敵の数を画面に表示.
+	gfx.drawText("enemy: " .. gameContext.enemyManager:getCount(), 10, 70)
 end
