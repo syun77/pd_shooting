@@ -19,8 +19,49 @@ eEnemyType = {
 	Stinger = 1, -- 高速狙い撃ち弾.
 	Side = 2, -- 両脇から横方向に弾を撃つ.
 	Ring = 3, -- 周囲にリング状に弾を撃つ.
+	Tripod = 4, -- 3wayを撃つ定期的に生成される雑魚敵.
 	Boss = 255,
 }
+
+-- 敵タイプごとの基本ステータス.
+local ENEMY_STATS = {
+	[eEnemyType.Stinger] = {
+		size = 16,
+		hp = 3,
+		lifetime = 30 * 10,
+	},
+	[eEnemyType.Side] = {
+		size = 16,
+		hp = 3,
+		lifetime = 30 * 10,
+	},
+	[eEnemyType.Ring] = {
+		size = 8,
+		hp = 3,
+		lifetime = 30 * 10,
+	},
+	[eEnemyType.Tripod] = {
+		size = 16,
+		hp = 3,
+		lifetime = 30 * 10,
+	},
+	[eEnemyType.Boss] = {
+		size = 48,
+		hp = 3,
+		lifetime = math.huge,
+	},
+}
+
+local DEFAULT_ENEMY_STATS = {
+	size = 16,
+	hp = 3,
+	lifetime = 30 * 10,
+}
+
+-- 敵タイプに対応するステータスを取得.
+local function getEnemyStats(enemyType)
+	return ENEMY_STATS[enemyType] or DEFAULT_ENEMY_STATS
+end
 
 -- 遅延弾発射情報.
 class ("DelayedBatteryInfo").extends()
@@ -45,13 +86,14 @@ class("Enemy").extends(Actor)
 -- コンストラクタ.
 function Enemy:init(x, y, type)
 	self.type = type
-	local size = self:getSize()
+	self.stats = getEnemyStats(self.type)
+	local size = self.stats.size
 	Enemy.super.init(self, x, y, size, size)
 	self.bullets = GameContext.getInstance().bulletManager -- 弾を管理するActorManagerへの参照.
-	self.hp = 3 -- 敵のHP.
+	self.hp = self.stats.hp -- 敵のHP.
 	self.timer = 0
 	self.step = 0 -- 攻撃パターンの段階管理用変数.
-	self.lifetime = self:getLifetime() -- 生存時間.
+	self.lifetime = self.stats.lifetime -- 生存時間.
 	self.batteries = {} -- 遅延弾発射の情報を格納するテーブル.
 	print("Enemy created at (" .. x .. ", " .. y .. ")")
 end
@@ -131,21 +173,12 @@ end
 
 -- サイズを取得.
 function Enemy:getSize()
-	if self.type == eEnemyType.Ring then
-		return 8
-	elseif self.type == eEnemyType.Boss then
-		return 48
-	end
-	return 16
+	return getEnemyStats(self.type).size
 end
 
 -- 生存時間を取得.
 function Enemy:getLifetime()
-	if self.type == eEnemyType.Ring then
-	elseif self.type == eEnemyType.Boss then
-		return math.huge -- ボスは無限に生存する.
-	end
-	return 30 * 10 -- 10秒間生存（30FPS想定）.
+	return getEnemyStats(self.type).lifetime
 end
 
 -- 更新 > 移動.
@@ -206,12 +239,13 @@ function Enemy:_updateAttackPattern()
 		end
 	elseif self.type == eEnemyType.Ring then
 		-- 周囲にリング状に弾を撃つ.
-		if self.timer % 30 == 0 then
+		if self.timer % 50 == 0 then
 			local spd = 3 + self.step * 2 -- 少しずつ速くする.
 			self:bullet(aim, spd) -- 中心の角度に向かって1発撃つ.
 			self.step += 1
-			if self.step >= 5 then
-				self.lifetime = 20 -- 5回攻撃したら消える.
+			self.timer += self.step * 7 -- 攻撃間隔を少しずつ短くする.
+			if self.step >= 6 then
+				self.lifetime = 20 -- 6回攻撃したら消える.
 			end
 		end
 	elseif self.type == eEnemyType.Boss then
