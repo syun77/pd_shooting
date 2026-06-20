@@ -20,6 +20,10 @@ eEnemyType = {
 	Side = 2, -- 両脇から横方向に弾を撃つ.
 	Ring = 3, -- 周囲にリング状に弾を撃つ.
 	Tripod = 4, -- 3wayを撃つ定期的に生成される雑魚敵.
+	Winder = 5, -- 画面端から斜めに弾を撃つ.
+	Curve = 6, -- カーブ移動で弾を撃つ.
+	Rolling = 7, -- 回転弾.
+	Stinger2 = 8, -- 高速狙い撃ち弾2.
 	Boss = 255,
 }
 
@@ -27,34 +31,55 @@ eEnemyType = {
 local ENEMY_STATS = {
 	[eEnemyType.Stinger] = {
 		size = 16,
-		hp = 3,
+		hp = 20,
 		lifetime = 30 * 10,
 	},
 	[eEnemyType.Side] = {
 		size = 16,
-		hp = 3,
+		hp = 20,
 		lifetime = 30 * 10,
 	},
 	[eEnemyType.Ring] = {
 		size = 8,
-		hp = 3,
+		hp = 10,
 		lifetime = 30 * 10,
 	},
 	[eEnemyType.Tripod] = {
-		size = 16,
-		hp = 3,
-		lifetime = 30 * 10,
+		size = 8,
+		hp = 5,
+		lifetime = 30 * 7,
 	},
 	[eEnemyType.Boss] = {
 		size = 48,
-		hp = 3,
-		lifetime = math.huge,
+		hp = 120,
+--		lifetime = math.huge,
+		lifetime = 3000, -- 100秒で終わり.
+	},
+	[eEnemyType.Winder] = {
+		size = 16,
+		hp = 20,
+		lifetime = 30 * 10,
+	},
+	[eEnemyType.Curve] = {
+		size = 16,
+		hp = 20,
+		lifetime = 30 * 10,
+	},
+	[eEnemyType.Rolling] = {
+		size = 16,
+		hp = 20,
+		lifetime = 30 * 10,
+	},
+	[eEnemyType.Stinger2] = {
+		size = 16,
+		hp = 20,
+		lifetime = 30 * 10,
 	},
 }
 
 local DEFAULT_ENEMY_STATS = {
 	size = 16,
-	hp = 3,
+	hp = 5,
 	lifetime = 30 * 10,
 }
 
@@ -93,9 +118,10 @@ function Enemy:init(x, y, type)
 	self.hp = self.stats.hp -- 敵のHP.
 	self.timer = 0
 	self.step = 0 -- 攻撃パターンの段階管理用変数.
+	self.value = 0 -- 汎用パラメータ
 	self.lifetime = self.stats.lifetime -- 生存時間.
 	self.batteries = {} -- 遅延弾発射の情報を格納するテーブル.
-	print("Enemy created at (" .. x .. ", " .. y .. ")")
+	-- print("Enemy created at (" .. x .. ", " .. y .. ")")
 end
 
 -- 消滅.
@@ -153,7 +179,7 @@ end
 -- 敵にダメージを与える関数.
 function Enemy:damage(amount)
 	self.hp = self.hp - amount
-	print("Enemy damaged! HP: " .. self.hp)
+	-- print("Enemy damaged! HP: " .. self.hp)
 	if self.hp <= 0 then
 		self:destroy() -- HPが0以下になったら削除.
 	end
@@ -198,6 +224,18 @@ function Enemy:_updateMovement()
 			self.vx = 0 -- 60フレーム経過したら止まる.
 			self.vy = 3 -- 下方向に移動.
 		end
+	elseif self.type == eEnemyType.Curve then
+		-- カーブ移動.
+		if self.step == 0 then
+			-- 初期速度を符号として保存.
+			self.value = 1
+			if self.vx < 0 then
+				self.value = -1
+			end
+			self.step = 1
+		end
+		-- 初期移動方向と逆に加速する.
+		self.vx += self.value * -0.2
 	else
 		self.vx *= 0.9 -- 徐々に減速.
 		self.vy *= 0.9
@@ -240,12 +278,48 @@ function Enemy:_updateAttackPattern()
 	elseif self.type == eEnemyType.Ring then
 		-- 周囲にリング状に弾を撃つ.
 		if self.timer % 50 == 0 then
-			local spd = 3 + self.step * 2 -- 少しずつ速くする.
-			self:bullet(aim, spd) -- 中心の角度に向かって1発撃つ.
+			local spd = 3 + self.step * 0.3 -- 少しずつ速くする.
+			if self.step % 2 == 1 then
+				self:_nWay(2, aim, spd, 45) -- 2-wayで撃つ.
+			else
+				self:bullet(aim, spd) -- 1発だけ狙い撃ち.
+			end
 			self.step += 1
 			self.timer += self.step * 7 -- 攻撃間隔を少しずつ短くする.
 			if self.step >= 6 then
 				self.lifetime = 20 -- 6回攻撃したら消える.
+			end
+		end
+	elseif self.type == eEnemyType.Tripod then
+		-- 3wayを撃つ定期的に生成される雑魚敵.
+		if self.timer % 60 == 0 then
+			self:_nWay(3, aim, 2, 10) -- 3-wayで撃つ.
+		end
+	elseif self.type == eEnemyType.Winder then
+		-- 画面端から斜めに弾を撃つ.
+		if self.timer > 60 then
+			local angle = 270 + (30 * math.sin(self.timer * 0.05))
+			self:bullet(angle, 10) -- 斜めに撃つ.
+		end
+	elseif self.type == eEnemyType.Curve then
+		if self.timer == 1 then
+			for i = 0, 16 do
+				local delay = i * 1
+				self:_nWay(3, aim, 3.5, 25, delay) -- 3-wayで撃つ.
+			end
+		end
+	elseif self.type == eEnemyType.Rolling then
+		-- 回転弾.
+		if self.timer > 60 then
+			local angle = self.timer * 2 -- 回転角度を増加させる.
+			angle += self.value
+			self.step += 1
+			if self.step % 2 == 0 then
+				self.value += 30 -- オフセット.
+			end
+			for i = 0, 2 do
+				local delay = i * 3
+				self:bullet(angle, 4, delay) -- 針弾.
 			end
 		end
 	elseif self.type == eEnemyType.Boss then

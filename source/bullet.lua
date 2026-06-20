@@ -14,7 +14,7 @@ class("Bullet").extends(Actor)
 -- コンストラクタ.
 function Bullet:init(x, y)
 	Bullet.super.init(self, x, y, 4, 4)
-	print("Bullet created at (" .. x .. ", " .. y .. ")")
+	-- print("Bullet created at (" .. x .. ", " .. y .. ")")
 end
 -- 更新.
 function Bullet:update()

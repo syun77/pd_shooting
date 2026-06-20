@@ -12,7 +12,7 @@ class("Shot").extends(Actor)
 
 function Shot:init(x, y)
 	Shot.super.init(self, x, y, 4, 4)
-	print("Shot created at (" .. x .. ", " .. y .. ")")
+	-- print("Shot created at (" .. x .. ", " .. y .. ")")
 end
 
 function Shot:update()

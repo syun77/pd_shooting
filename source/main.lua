@@ -26,7 +26,6 @@ function pd.update()
 	gameContext.shotManager:forEach(function(shot)
 		gameContext.enemyManager:forEach(function(enemy)
 			if shot:isCollidingCircle(enemy) then
-				print("Hit!")
 				shot:despawn() -- 当たったショットを削除.
 				enemy:damage(1) -- 敵にダメージを与える.
 			end

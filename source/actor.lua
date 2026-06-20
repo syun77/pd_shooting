@@ -37,7 +37,7 @@ function Actor:init(x, y, w, h)
 	self.ay = 0 -- Y方向の加速度.
 	self.radius = w * 0.5 -- 当たり判定用の半径（円形と仮定）.
 	self.manager = nil -- ActorManagerが管理している場合はそこから削除するための参照.
-	print("Actor created at (" .. x .. ", " .. y .. ") with size (" .. w .. ", " .. h .. ")")
+	-- print("Actor created at (" .. x .. ", " .. y .. ") with size (" .. w .. ", " .. h .. ")")
 end
 
 -- 移動.
